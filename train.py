@@ -46,24 +46,24 @@ recordings, all at a consistent length, and then arrange them into subfolders
 organized by label. For example, here's a possible file structure:
 
 my_wavs >
-  up >
+  indian >
     audio_0.wav
     audio_1.wav
-  down >
+  us >
     audio_2.wav
     audio_3.wav
-  other>
+  other >
     audio_4.wav
     audio_5.wav
 
 You'll also need to tell the script what labels to look for, using the
-`--wanted_words` argument. In this case, 'up,down' might be what you want, and
+`--wanted_accents` argument. In this case, 'up,down' might be what you want, and
 the audio in the 'other' folder would be used to train an 'unknown' category.
 
 To pull this all together, you'd run:
 
 bazel run tensorflow/examples/speech_commands:train -- \
---data_dir=my_wavs --wanted_words=up,down
+--data_dir=my_wavs --wanted_accents=up,down
 
 """
 from __future__ import absolute_import
@@ -96,13 +96,13 @@ def main(_):
   # training data of your own, use `--data_url= ` on the command line to avoid
   # downloading.
   model_settings = models.prepare_model_settings(
-      len(input_data.prepare_words_list(FLAGS.wanted_words.split(','))),
+      len(input_data.prepare_words_list(FLAGS.wanted_accents.split(','))),
       FLAGS.sample_rate, FLAGS.clip_duration_ms, FLAGS.window_size_ms,
       FLAGS.window_stride_ms, FLAGS.dct_coefficient_count)
   audio_processor = input_data.AudioProcessor(
       FLAGS.data_url, FLAGS.data_dir, FLAGS.silence_percentage,
       FLAGS.unknown_percentage,
-      FLAGS.wanted_words.split(','), FLAGS.validation_percentage,
+      FLAGS.wanted_accents.split(','), FLAGS.validation_percentage,
       FLAGS.testing_percentage, model_settings)
   fingerprint_size = model_settings['fingerprint_size']
   label_count = model_settings['label_count']
@@ -394,9 +394,9 @@ if __name__ == '__main__':
       default='/tmp/retrain_logs',
       help='Where to save summary logs for TensorBoard.')
   parser.add_argument(
-      '--wanted_words',
+      '--wanted_accents',
       type=str,
-      default='yes,no,up,down,left,right,on,off,stop,go',
+      default='indian,us',
       help='Words to use (others will be added to an unknown label)',)
   parser.add_argument(
       '--train_dir',

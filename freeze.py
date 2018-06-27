@@ -52,7 +52,7 @@ from tensorflow.python.framework import graph_util
 FLAGS = None
 
 
-def create_inference_graph(wanted_words, sample_rate, clip_duration_ms,
+def create_inference_graph(wanted_accents, sample_rate, clip_duration_ms,
                            clip_stride_ms, window_size_ms, window_stride_ms,
                            dct_coefficient_count, model_architecture):
   """Creates an audio model with the nodes needed for inference.
@@ -61,7 +61,7 @@ def create_inference_graph(wanted_words, sample_rate, clip_duration_ms,
   output nodes that are needed to use the graph for inference.
 
   Args:
-    wanted_words: Comma-separated list of the words we're trying to recognize.
+    wanted_accents: Comma-separated list of the words we're trying to recognize.
     sample_rate: How many samples per second are in the input audio files.
     clip_duration_ms: How many samples to analyze for the audio pattern.
     clip_stride_ms: How often to run recognition. Useful for models with cache.
@@ -71,7 +71,7 @@ def create_inference_graph(wanted_words, sample_rate, clip_duration_ms,
     model_architecture: Name of the kind of model to generate.
   """
 
-  words_list = input_data.prepare_words_list(wanted_words.split(','))
+  words_list = input_data.prepare_words_list(wanted_accents.split(','))
   model_settings = models.prepare_model_settings(
       len(words_list), sample_rate, clip_duration_ms, window_size_ms,
       window_stride_ms, dct_coefficient_count)
@@ -110,7 +110,7 @@ def main(_):
 
   # Create the model and load its weights.
   sess = tf.InteractiveSession()
-  create_inference_graph(FLAGS.wanted_words, FLAGS.sample_rate,
+  create_inference_graph(FLAGS.wanted_accents, FLAGS.sample_rate,
                          FLAGS.clip_duration_ms, FLAGS.clip_stride_ms,
                          FLAGS.window_size_ms, FLAGS.window_stride_ms,
                          FLAGS.dct_coefficient_count, FLAGS.model_architecture)
@@ -170,7 +170,7 @@ if __name__ == '__main__':
       default='conv',
       help='What model architecture to use')
   parser.add_argument(
-      '--wanted_words',
+      '--wanted_accents',
       type=str,
       default='yes,no,up,down,left,right,on,off,stop,go',
       help='Words to use (others will be added to an unknown label)',)

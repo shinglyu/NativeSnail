@@ -46,16 +46,16 @@ BACKGROUND_NOISE_DIR_NAME = '_background_noise_'
 RANDOM_SEED = 59185
 
 
-def prepare_words_list(wanted_words):
+def prepare_words_list(wanted_accents):
   """Prepends common tokens to the custom word list.
 
   Args:
-    wanted_words: List of strings containing the custom words.
+    wanted_accents: List of strings containing the custom words.
 
   Returns:
     List with the standard silence and unknown tokens added.
   """
-  return [SILENCE_LABEL, UNKNOWN_WORD_LABEL] + wanted_words
+  return [SILENCE_LABEL, UNKNOWN_WORD_LABEL] + wanted_accents
 
 
 def which_set(filename, validation_percentage, testing_percentage):
@@ -152,12 +152,12 @@ class AudioProcessor(object):
   """Handles loading, partitioning, and preparing audio training data."""
 
   def __init__(self, data_url, data_dir, silence_percentage, unknown_percentage,
-               wanted_words, validation_percentage, testing_percentage,
+               wanted_accents, validation_percentage, testing_percentage,
                model_settings):
     self.data_dir = data_dir
     self.maybe_download_and_extract_dataset(data_url, data_dir)
     self.prepare_data_index(silence_percentage, unknown_percentage,
-                            wanted_words, validation_percentage,
+                            wanted_accents, validation_percentage,
                             testing_percentage)
     self.prepare_background_data()
     self.prepare_processing_graph(model_settings)
@@ -204,7 +204,7 @@ class AudioProcessor(object):
     tarfile.open(filepath, 'r:gz').extractall(dest_directory)
 
   def prepare_data_index(self, silence_percentage, unknown_percentage,
-                         wanted_words, validation_percentage,
+                         wanted_accents, validation_percentage,
                          testing_percentage):
     """Prepares a list of the samples organized by set and label.
 
@@ -218,7 +218,7 @@ class AudioProcessor(object):
     Args:
       silence_percentage: How much of the resulting data should be background.
       unknown_percentage: How much should be audio outside the wanted classes.
-      wanted_words: Labels of the classes we want to be able to recognize.
+      wanted_accents: Labels of the classes we want to be able to recognize.
       validation_percentage: How much of the data set to use for validation.
       testing_percentage: How much of the data set to use for testing.
 
@@ -231,9 +231,9 @@ class AudioProcessor(object):
     """
     # Make sure the shuffling and picking of unknowns is deterministic.
     random.seed(RANDOM_SEED)
-    wanted_words_index = {}
-    for index, wanted_word in enumerate(wanted_words):
-      wanted_words_index[wanted_word] = index + 2
+    wanted_accents_index = {}
+    for index, wanted_word in enumerate(wanted_accents):
+      wanted_accents_index[wanted_word] = index + 2
     self.data_index = {'validation': [], 'testing': [], 'training': []}
     unknown_index = {'validation': [], 'testing': [], 'training': []}
     all_words = {}
@@ -250,13 +250,13 @@ class AudioProcessor(object):
       set_index = which_set(wav_path, validation_percentage, testing_percentage)
       # If it's a known class, store its detail, otherwise add it to the list
       # we'll use to train the unknown label.
-      if word in wanted_words_index:
+      if word in wanted_accents_index:
         self.data_index[set_index].append({'label': word, 'file': wav_path})
       else:
         unknown_index[set_index].append({'label': word, 'file': wav_path})
     if not all_words:
       raise Exception('No .wavs found at ' + search_path)
-    for index, wanted_word in enumerate(wanted_words):
+    for index, wanted_word in enumerate(wanted_accents):
       if wanted_word not in all_words:
         raise Exception('Expected to find ' + wanted_word +
                         ' in labels but only found ' +
@@ -280,11 +280,11 @@ class AudioProcessor(object):
     for set_index in ['validation', 'testing', 'training']:
       random.shuffle(self.data_index[set_index])
     # Prepare the rest of the result data structure.
-    self.words_list = prepare_words_list(wanted_words)
+    self.words_list = prepare_words_list(wanted_accents)
     self.word_to_index = {}
     for word in all_words:
-      if word in wanted_words_index:
-        self.word_to_index[word] = wanted_words_index[word]
+      if word in wanted_accents_index:
+        self.word_to_index[word] = wanted_accents_index[word]
       else:
         self.word_to_index[word] = UNKNOWN_WORD_INDEX
     self.word_to_index[SILENCE_LABEL] = SILENCE_INDEX
