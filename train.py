@@ -104,6 +104,10 @@ def main(_):
       FLAGS.unknown_percentage,
       FLAGS.wanted_accents.split(','), FLAGS.validation_percentage,
       FLAGS.testing_percentage, model_settings)
+
+  if FLAGS.force_equal_num_train:
+      audio_processor.force_equal_number_training_samples()
+
   fingerprint_size = model_settings['fingerprint_size']
   label_count = model_settings['label_count']
   time_shift_samples = int((FLAGS.time_shift_ms * FLAGS.sample_rate) / 1000)
@@ -432,6 +436,11 @@ if __name__ == '__main__':
       type=bool,
       default=False,
       help='Whether to check for invalid numbers during processing')
+  parser.add_argument(
+      '--force_equal_num_train',
+      type=bool,
+      default=False,
+      help='Whether to truncate the training set so all of them have same number of samples')
 
   FLAGS, unparsed = parser.parse_known_args()
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

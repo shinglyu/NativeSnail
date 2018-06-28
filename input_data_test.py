@@ -207,6 +207,16 @@ class InputDataTest(test.TestCase):
     self.assertEqual(10, len(result_data))
     self.assertEqual(10, len(result_labels))
 
+  def testForceEqualNumberTrainingSample(self):
+    tmp_dir = self.get_temp_dir()
+    self._saveWavFolders(tmp_dir, ["a"], 10)
+    self._saveWavFolders(tmp_dir, ["b"], 100) # b has more then a => should only use 10
+    audio_processor = input_data.AudioProcessor("", tmp_dir, 10, 10, ["a", "b"],
+                                                10, 10, self._model_settings())
+    audio_processor.force_equal_number_training_samples()
+    a_count = len(filter(lambda x: x['label'] == 'a', audio_processor.data_index['training']))
+    b_count = len(filter(lambda x: x['label'] == 'b', audio_processor.data_index['training']))
+    self.assertEquals(a_count, b_count)
 
 if __name__ == "__main__":
   test.main()

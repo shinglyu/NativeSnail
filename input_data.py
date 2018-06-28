@@ -26,6 +26,7 @@ import random
 import re
 import sys
 import tarfile
+from collections import defaultdict
 
 import numpy as np
 from six.moves import urllib
@@ -267,6 +268,37 @@ class AudioProcessor(object):
         self.word_to_index[word] = UNKNOWN_WORD_INDEX
     self.word_to_index[SILENCE_LABEL] = SILENCE_INDEX
 
+    tf.logging.info("Sample size:")
+    for label, values in self.data_index.iteritems():
+        tf.logging.info("- {name}: {count}".format(name=label,
+                                                   count=len(values)))
+
+
+  def force_equal_number_training_samples(self):
+    """Make every category in the training set have equal number of samples.
+    Will use the number of samples from the smallest set, and randomly drop the
+    other sets.
+    """
+
+    # Make sure the shuffling and picking of unknowns is deterministic.
+    counts = defaultdict(lambda: 0)
+    for sample in self.data_index['training']:
+        counts[sample['label']] += 1
+    min_count = min(counts.values())
+
+    random.seed(RANDOM_SEED)
+    random.shuffle(self.data_index['training'])
+
+    output_counts = defaultdict(lambda: 0)
+    output_list = []
+    for sample in self.data_index['training']:
+        if output_counts[sample['label']] < min_count:
+            output_list.append(sample)
+            output_counts[sample['label']] += 1
+    self.data_index['training'] = output_list
+    tf.logging.info("Truncated the training samples to {count}, so each label has {each_count} samples".format(count=len(self.data_index['training']), each_count=min_count))
+
+
   def prepare_background_data(self):
     """Searches a folder for background noise audio, and loads it into memory.
 
@@ -322,7 +354,7 @@ class AudioProcessor(object):
       - mfcc_: Output 2D fingerprint of processed audio.
 
     Args:
-      model_settings: Information about the current model being trained.
+      model_settings: enformation about the current model being trained.
     """
     desired_samples = model_settings['desired_samples']
     self.wav_filename_placeholder_ = tf.placeholder(tf.string, [])
