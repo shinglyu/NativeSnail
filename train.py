@@ -172,6 +172,15 @@ def main(_):
 
   tf.global_variables_initializer().run()
 
+  # Restore the model
+  try:
+    checkpoint_path = os.path.join(FLAGS.train_dir,
+                                   FLAGS.model_architecture + '.ckpt')
+    os.stat(checkpoint_path + '.meta')
+    saver.restore(sess, checkpoint_path)
+  except OSError:
+    pass
+
   start_step = 1
 
   if FLAGS.start_checkpoint:
@@ -254,8 +263,8 @@ def main(_):
         training_step == training_steps_max):
       checkpoint_path = os.path.join(FLAGS.train_dir,
                                      FLAGS.model_architecture + '.ckpt')
-      tf.logging.info('Saving to "%s-%d"', checkpoint_path, training_step)
-      saver.save(sess, checkpoint_path, global_step=training_step)
+      tf.logging.info('Saving to "%s"', checkpoint_path)
+      saver.save(sess, checkpoint_path)
 
   set_size = audio_processor.set_size('testing')
   tf.logging.info('set_size=%d', set_size)

@@ -154,6 +154,7 @@ class AudioProcessor(object):
   def __init__(self, data_url, data_dir, silence_percentage, unknown_percentage,
                wanted_accents, validation_percentage, testing_percentage,
                model_settings):
+    self.zeros_bufs = {}
     self.data_dir = data_dir
     self.check_dataset_exists(data_url, data_dir)
     self.prepare_data_index(silence_percentage, unknown_percentage,
@@ -372,6 +373,23 @@ class AudioProcessor(object):
     """
     return len(self.data_index[mode])
 
+  def start_zeros(self):
+    self.zeros_idx = 0
+    pass
+
+  def zeros(self, shape):
+    if not isinstance(shape, (list, tuple)):
+      shape = (shape,)
+      pass
+    key = tuple(shape) + (self.zeros_idx,)
+    self.zeros_idx = self.zeros_idx + 1
+    if not self.zeros_bufs.has_key(key):
+      self.zeros_bufs[key] = np.zeros(shape)
+    else:
+      self.zeros_bufs[key] -= self.zeros_bufs[key]
+      pass
+    return self.zeros_bufs[key]
+
   def get_data(self, how_many, offset, model_settings, background_frequency,
                background_volume_range, time_shift, mode, sess):
     """Gather samples from the data set, applying transformations as needed.
@@ -403,8 +421,9 @@ class AudioProcessor(object):
     else:
       sample_count = max(0, min(how_many, len(candidates) - offset))
     # Data and labels will be populated and returned.
-    data = np.zeros((sample_count, model_settings['fingerprint_size']))
-    labels = np.zeros(sample_count)
+    self.start_zeros()
+    data = self.zeros((sample_count, model_settings['fingerprint_size']))
+    labels = self.zeros(sample_count)
     desired_samples = model_settings['desired_samples']
     use_background = self.background_data and (mode == 'training')
     pick_deterministically = (mode != 'training')
@@ -449,7 +468,7 @@ class AudioProcessor(object):
         else:
           background_volume = 0
       else:
-        background_reshaped = np.zeros([desired_samples, 1])
+        background_reshaped = self.zeros([desired_samples, 1])
         background_volume = 0
       input_dict[self.background_data_placeholder_] = background_reshaped
       input_dict[self.background_volume_placeholder_] = background_volume
